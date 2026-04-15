@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Trained checkpoints and training logs (too big / regenerable)
+dl/ppo_carracing.zip
+dl/train.log
+dl/tb_logs/
+
+# Debug frame dumps
+videos/
+
+# Local IDE config
+.claude/
+.vscode/
+.idea/
+.DS_Store
