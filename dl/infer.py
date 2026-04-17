@@ -2,15 +2,19 @@
 
 Same interface as classical.run.run: takes (seed, render) and returns
 the total reward. This is what the eval harness calls.
+
+The model was trained with frame stacking (4 frames concatenated along
+the channel axis), so inference must use the same wrapping.
 """
 import argparse
 
+import gymnasium as gym
 from stable_baselines3 import PPO
-
-from env.car_racing_env import make_env
+from stable_baselines3.common.vec_env import DummyVecEnv, VecTransposeImage, VecFrameStack
 
 
 CHECKPOINT = "dl/ppo_carracing"
+N_STACK = 4
 
 
 # Cache the loaded model so the eval sweep doesn't reload from disk per seed.
@@ -24,20 +28,33 @@ def _get_model():
     return _model
 
 
+def _make_eval_env(seed: int):
+    """Wrap a single CarRacing env with the same frame-stack + transpose
+    that the model was trained with."""
+    def _make():
+        env = gym.make("CarRacing-v3", continuous=True)
+        env.reset(seed=seed)
+        return env
+    vec = DummyVecEnv([_make])
+    vec = VecTransposeImage(vec)
+    vec = VecFrameStack(vec, n_stack=N_STACK)
+    return vec
+
+
 def run(seed: int, render: bool = False) -> float:
     model = _get_model()
-    env = make_env(seed=seed, render_mode="human" if render else None)
-    obs, _ = env.reset(seed=seed)
+    vec_env = _make_eval_env(seed)
+    obs = vec_env.reset()
     total = 0.0
     done = False
     while not done:
         # deterministic=True -> take the mean action from the policy
         # distribution instead of sampling. Gives reproducible eval.
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, term, trunc, _ = env.step(action)
-        total += reward
-        done = term or trunc
-    env.close()
+        obs, reward, dones, infos = vec_env.step(action)
+        total += reward[0]
+        done = dones[0]
+    vec_env.close()
     return float(total)
 
 
