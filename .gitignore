@@ -10,6 +10,19 @@ dl/tb_logs/
 # Debug frame dumps
 videos/
 
+# LaTeX build artifacts (keep .tex and .pdf)
+slides/*.aux
+slides/*.log
+slides/*.nav
+slides/*.out
+slides/*.snm
+slides/*.toc
+texput.log
+
+# Large intermediate/regenerable visual assets
+visuals/demo_frames/
+visuals/driving_side_by_side.avi
+
 # Local IDE config
 .claude/
 .vscode/
